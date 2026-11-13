@@ -1412,3 +1412,10 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ================= 图标（lucide sprite） ================= */
+svg.ic { width: 100%; height: 100%; display: block; overflow: visible; }
+#topbar button svg.ic { width: 20px; height: 20px; margin: auto; }
+#pager button svg.ic { width: 18px; height: 18px; margin: auto; }
+.pill svg.ic { width: 17px; height: 17px; }
+.pill svg.ic.chev { width: 13px; height: 13px; opacity: .5; }
