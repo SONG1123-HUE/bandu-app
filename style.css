@@ -310,6 +310,119 @@ body.reading #topbar::before { opacity: .45; }
   #pagewrap::after { animation: none; background: var(--surface-3); }
 }
 
+/* =========================================================
+   Apple 皮肤（data-skin="apple"）
+   iOS 的系统色、iOS 的分组卡片、iOS 的留白逻辑。
+   和原来的「东方红」互不干扰，切换时只换变量和几个组件细节。
+   ========================================================= */
+:root[data-skin="apple"] {
+  /* —— 深色（iOS Dark）—— */
+  --bg:        #000000;
+  --bg-deep:   #000000;
+  --surface:   #1c1c1e;
+  --surface-2: #2c2c2e;
+  --surface-3: #3a3a3c;
+  --line:      rgba(84,84,88,.55);
+  --line-soft: rgba(84,84,88,.34);
+  --text:      #ffffff;
+  --text-dim:  rgba(235,235,245,.62);
+  --text-mute: rgba(235,235,245,.34);
+  --accent:    #0a84ff;
+  --accent-2:  #409cff;
+  --accent-lo: #0060df;
+  --accent-soft: rgba(10,132,255,.16);
+  --gold:      #ff9f0a;
+  --gold-2:    #ffd60a;
+  --warn:      #ff9f0a;
+  --ok:        #32d74b;
+  --danger:    #ff453a;
+  --glass:     rgba(28,28,30,.82);
+  --glass-brd: rgba(255,255,255,.08);
+  --shadow:    0 12px 40px rgba(0,0,0,.55);
+  --shadow-sm: 0 4px 16px rgba(0,0,0,.4);
+  --page-shadow:
+      0 1px 2px rgba(0,0,0,.4),
+      0 10px 30px rgba(0,0,0,.5),
+      0 0 0 1px rgba(255,255,255,.06);
+  --sel:       rgba(10,132,255,.18);
+  --glow:      none;
+  --grain-op:  0;
+}
+:root[data-skin="apple"][data-theme="light"] {
+  /* —— 浅色（iOS Light）—— */
+  --bg:        #f2f2f7;
+  --bg-deep:   #f2f2f7;
+  --surface:   #ffffff;
+  --surface-2: #f2f2f7;
+  --surface-3: #e5e5ea;
+  --line:      rgba(60,60,67,.29);
+  --line-soft: rgba(60,60,67,.16);
+  --text:      #000000;
+  --text-dim:  rgba(60,60,67,.6);
+  --text-mute: rgba(60,60,67,.32);
+  --accent:    #007aff;
+  --accent-2:  #3395ff;
+  --accent-lo: #0062cc;
+  --accent-soft: rgba(0,122,255,.1);
+  --gold:      #ff9500;
+  --gold-2:    #ffcc00;
+  --warn:      #ff9500;
+  --ok:        #34c759;
+  --danger:    #ff3b30;
+  --glass:     rgba(255,255,255,.86);
+  --glass-brd: rgba(60,60,67,.12);
+  --shadow:    0 12px 36px rgba(0,0,0,.1);
+  --shadow-sm: 0 3px 12px rgba(0,0,0,.08);
+  --page-shadow:
+      0 1px 2px rgba(0,0,0,.08),
+      0 10px 28px rgba(0,0,0,.1),
+      0 0 0 1px rgba(0,0,0,.05);
+  --sel:       rgba(0,122,255,.12);
+  --glow:      none;
+  --grain-op:  0;
+}
+
+/* 苹果皮肤不画星空、不画人物、不画光芒 —— iOS 的背景是纯净的 */
+:root[data-skin="apple"] #starfield,
+:root[data-skin="apple"] #bgfig,
+:root[data-skin="apple"] #topbar::before,
+:root[data-skin="apple"] #grain { display: none !important; }
+
+:root[data-skin="apple"] body,
+:root[data-skin="apple"] html {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro SC",
+               "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -.01em;
+}
+
+/* 分组卡片：iOS 的 inset grouped 观感 —— 大圆角、细边、极轻阴影 */
+:root[data-skin="apple"] .sheet { border-radius: 22px; }
+:root[data-skin="apple"] .pill { border-radius: 12px; background: var(--surface-2); border-color: transparent; }
+:root[data-skin="apple"] #panel { border-radius: 20px; }
+:root[data-skin="apple"] #pager { border-radius: 16px; background: var(--glass); }
+:root[data-skin="apple"] .chip { border-radius: 999px; background: var(--surface-2); border-color: transparent; }
+:root[data-skin="apple"] .chip:hover { background: var(--surface-3); }
+:root[data-skin="apple"] .ico-btn { border-radius: 10px; }
+:root[data-skin="apple"] .ico-btn:hover { background: rgba(120,120,128,.18); }
+:root[data-skin="apple"] .bitem { border-radius: 14px; border-color: transparent; background: var(--surface); }
+:root[data-skin="apple"] .btn { border-radius: 12px; }
+:root[data-skin="apple"] .btn.primary {
+  background: var(--accent); border-color: transparent; color: #fff;
+  box-shadow: none;
+}
+:root[data-skin="apple"] #send { border-radius: 14px; background: var(--accent); }
+:root[data-skin="apple"] .tb-sep { display: none; }
+:root[data-skin="apple"] #pager::before { content: ""; padding: 0; }
+:root[data-skin="apple"] #panelTitle::before { content: ""; margin: 0; }
+:root[data-skin="apple"] #progressBar { background: var(--accent); }
+:root[data-skin="apple"] .msg.bot .math { color: var(--accent); font-family: "SF Pro Text", "Times New Roman", serif; }
+:root[data-skin="apple"] .bitem.cur {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--accent), 0 6px 20px rgba(0,0,0,.3);
+}
+:root[data-skin="apple"] .bitem.cur::after { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 html, body {

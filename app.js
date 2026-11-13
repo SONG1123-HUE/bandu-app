@@ -2177,9 +2177,22 @@ function toggleUI(force) {
 function applyTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
   localStorage.setItem('jb_theme', t);
+  // 苹果皮肤用系统蓝（浅色 #007AFF / 深色 #0A84FF），东方红用金色
+  const skin = document.documentElement.getAttribute('data-skin') || 'red';
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', t === 'light' ? '#f2f4f8' : '#0b0d11');
+  if (meta) {
+    if (skin === 'apple') meta.setAttribute('content', t === 'light' ? '#f2f2f7' : '#000000');
+    else meta.setAttribute('content', t === 'light' ? '#f2f4f8' : '#0b0d11');
+  }
   if (E.btnTheme) E.btnTheme.title = t === 'light' ? '切到深色' : '切到浅色';
+}
+
+/* 皮肤切换：red（东方红）/ apple（iOS 风格） */
+function applySkin(s) {
+  s = (s === 'apple') ? 'apple' : 'red';
+  document.documentElement.setAttribute('data-skin', s);
+  localStorage.setItem('jb_skin', s);
+  applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
 }
 if (E.btnTheme) {
   E.btnTheme.onclick = () => {
@@ -2637,6 +2650,12 @@ const CMD_ACTIONS = [
   { k: '学习统计', icon: '📊', run: () => openStats() },
   { k: '切换单/双页/滚动', icon: '▯', run: () => cycleLayout() },
   { k: '切换深浅主题', icon: '☀', run: () => $('#btnTheme').click() },
+  { k: '切换外观：东方红 / 苹果', icon: '◑', run: () => {
+      const cur = document.documentElement.getAttribute('data-skin') || 'red';
+      const next = cur === 'apple' ? 'red' : 'apple';
+      applySkin(next);
+      toast(next === 'apple' ? '苹果风格（iOS 配色）' : '东方红 · 星辰大海');
+    } },
   { k: '扫描件增强', icon: '◐', run: () => $('#btnFx').click() },
   { k: '书架', icon: '📚', run: () => { renderBookList(); E.booksModal.hidden = false; } },
   { k: '导出全部备份', icon: '⬇', run: () => { location.href = '/api/backup'; } },
@@ -2885,7 +2904,9 @@ function openThumbs() {
 
 /* ------------------------------------------------ boot */
 (function initTheme() {
-  applyTheme(localStorage.getItem('jb_theme') || 'dark');
+  const q = new URLSearchParams(location.search);
+  applySkin(q.get('skin') || localStorage.getItem('jb_skin') || 'red');
+  applyTheme(q.get('light') !== null ? 'light' : (localStorage.getItem('jb_theme') || 'dark'));
 })();
 
 (async function boot() {
