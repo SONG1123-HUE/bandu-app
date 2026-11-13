@@ -11,7 +11,7 @@
 <meta name="screen-orientation" content="any">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b0d11">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <title>教材伴读</title>
 <script>
@@ -92,30 +92,46 @@
     <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
   </button>
   <div class="spacer"></div>
-  <button id="btnSel" class="ico-btn" title="框选提问">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/></svg>
-  </button>
-  <button id="btnPen" class="ico-btn" title="手写批注">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20l4-1 9-9-3-3-9 9-1 4z"/><path d="M14 7l3 3"/></svg>
-  </button>
-  <button id="btnToc" class="ico-btn" title="目录">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h4M4 12h4M4 18h4M11 6h9M11 12h9M11 18h9"/></svg>
-  </button>
-  <button id="btnLayout" class="ico-btn" title="单页 / 双页">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="14" rx="1.5"/></svg>
-  </button>
-  <button id="btnBookmark" class="ico-btn" title="给当前页加书签">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h12v17l-6-4.2L6 21V4z"/></svg>
-  </button>
-  <button id="btnList" class="ico-btn" title="我的疑点">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
-  </button>
-  <button id="btnTheme" class="ico-btn" title="切换主题">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
-  </button>
-  <button id="btnSet" class="ico-btn" title="设置">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
-  </button>
+
+  <!-- 标注组：在页面上动手的东西 -->
+  <div class="tb-group">
+    <button id="btnSel" class="ico-btn" title="框选提问">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/></svg>
+    </button>
+    <button id="btnPen" class="ico-btn" title="手写批注">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20l4-1 9-9-3-3-9 9-1 4z"/><path d="M14 7l3 3"/></svg>
+    </button>
+  </div>
+
+  <div class="tb-sep"></div>
+
+  <!-- 导航组：在书里跳来跳去的东西 -->
+  <div class="tb-group">
+    <button id="btnToc" class="ico-btn" title="目录">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h4M4 12h4M4 18h4M11 6h9M11 12h9M11 18h9"/></svg>
+    </button>
+    <button id="btnLayout" class="ico-btn" title="单页 / 双页">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="14" rx="1.5"/></svg>
+    </button>
+    <button id="btnBookmark" class="ico-btn" title="给当前页加书签">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h12v17l-6-4.2L6 21V4z"/></svg>
+    </button>
+    <button id="btnList" class="ico-btn" title="我的疑点">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+    </button>
+  </div>
+
+  <div class="tb-sep"></div>
+
+  <!-- 系统组 -->
+  <div class="tb-group">
+    <button id="btnTheme" class="ico-btn" title="切换主题">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
+    </button>
+    <button id="btnSet" class="ico-btn" title="设置">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+    </button>
+  </div>
 </header>
 
 <!-- ============ 阅读进度 ============ -->
@@ -382,26 +398,9 @@
 
 <div id="toast"></div>
 
-<script>window.__OFFLINE_BOOK__={"multi": true, "id": "__multi__", "pages": 1700};</script>
+<script>window.__OFFLINE_BOOK__={"multi":true,"id":"__multi__","pages":1700};</script>
 <script src="app.js"></script>
 <script src="sync.js"></script>
-
-<script>
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').then(() => {
-    navigator.serviceWorker.addEventListener('message', ev => {
-      const d = ev.data || {};
-      const t = document.getElementById('toast');
-      if (d.type === 'progress' && d.total) {
-        document.title = '缓存中 ' + Math.round(d.done / d.total * 100) + '% · 伴读';
-        if (t) { t.textContent = '正在缓存 ' + d.done + ' / ' + d.total + ' 页…'; t.classList.add('show'); }
-      } else if (d.type === 'cached') {
-        document.title = '教材伴读';
-        if (t) { t.textContent = '整站已缓存到本机，断网也能用'; setTimeout(() => t.classList.remove('show'), 5000); }
-      }
-    });
-  }).catch(() => {});
-}
-</script>
+<script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

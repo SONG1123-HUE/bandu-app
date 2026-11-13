@@ -346,6 +346,7 @@ async function openBook(b) {
   E.bookName.textContent = b.title;
   E.pageTotal.textContent = '/ ' + S.pages;
   document.title = b.title + ' · 教材伴读';
+  document.body.classList.add('reading');
   localStorage.setItem('jb_last', b.id);
   let n = null;
   if (OFF) {
@@ -422,6 +423,7 @@ function gotoPage(n) {
   };
   if (E.img.getAttribute('src') === url && E.img.complete && E.img.naturalWidth) { onPageLoaded(); return; }
   E.img.classList.remove('ready');
+  E.wrap.classList.add('loading');
   const seq = ++S.loadSeq;
   clearTimeout(plTimer);
   plTimer = setTimeout(() => {
@@ -450,6 +452,7 @@ function onPageLoaded() {
   const errBox = $('#pageError');
   if (errBox) errBox.hidden = true;
   E.img.classList.add('ready');
+  E.wrap.classList.remove('loading');
   S.natW = E.img.naturalWidth; S.natH = E.img.naturalHeight;
   if (!S.natW) return;
   const W = wrapW();
