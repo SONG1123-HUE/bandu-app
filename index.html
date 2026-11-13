@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="伴读">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<meta name="screen-orientation" content="any">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0d11">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<title>教材伴读</title>
+<script>
+  // 首帧就定好主题，避免先深后浅的闪烁与重绘
+  try {
+    var t = (location.search.indexOf('light') >= 0) ? 'light'
+          : (localStorage.getItem('jb_theme') || 'dark');
+    document.documentElement.setAttribute('data-theme', t);
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute('content', t === 'light' ? '#f3f5fa' : '#08090d');
+  } catch (e) { }
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="starfield"></div>
+<div id="bgfig">
+  <div class="fig fig-orbit"></div>
+  <div class="fig fig-star"></div>
+  <div class="fig fig-solvay"></div>
+</div>
+<div id="grain"></div>
+
+<!-- ============ 阅读舞台 ============ -->
+<div id="stage">
+  <div id="pagewrap">
+    <img id="pageimg" alt="" draggable="false">
+    <img id="pageimg2" alt="" draggable="false" hidden>
+    <canvas id="ink"></canvas>
+  </div>
+  <div id="selbox" hidden></div>
+  <div id="selSize" hidden>0 × 0</div>
+  <div id="zoombadge" hidden>100%</div>
+  <div id="pageloading" hidden><span class="spin"></span></div>
+  <div id="pageError" hidden>
+    <div class="pe-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+      <p id="peText">这一页读不出来</p>
+      <button id="peRetry" class="btn primary">重试</button>
+    </div>
+  </div>
+</div>
+
+<!-- 选框上的按钮放在 stage 外面：stage 用 setPointerCapture 拖拽，会把里面的点击全吃掉 -->
+<button id="selX" hidden title="取消这块（Esc）" onclick="window.__cancelSel && window.__cancelSel()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>
+</button>
+<div id="selActions" hidden>
+  <button data-q="把框出来的这一块讲清楚：它在讲什么、属于哪个概念。">讲这块</button>
+  <button data-q="框里这一步为什么可以这样？成立条件是什么？">为什么</button>
+  <button data-q="针对框里这块内容，给一个具体的数值例子。">举个例</button>
+  <button data-q="把框里这段内容用更直白的话解释一遍，保留关键术语。">说人话</button>
+  <button id="selCancel" class="cx" title="取消这块（Esc）">✕</button>
+</div>
+
+<!-- ============ 连续滚动视图 ============ -->
+<div id="scrollView" hidden></div>
+
+<!-- ============ 空态 ============ -->
+<div id="empty" hidden>
+  <div class="card">
+    <div class="empty-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5.5A2.5 2.5 0 016.5 3H19v16H6.5A2.5 2.5 0 004 21.5V5.5z"/><path d="M19 19v2H6.5"/></svg>
+    </div>
+    <h2>书架还是空的</h2>
+    <p>把教材丢进这个文件夹，点下面的按钮重新扫描。</p>
+    <p class="path" id="booksPath">…</p>
+    <button id="emptyReload" class="btn primary">重新扫描</button>
+  </div>
+</div>
+
+<!-- ============ 顶栏 ============ -->
+<header id="topbar">
+  <button id="btnBooks" class="pill">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5.5A2.5 2.5 0 016.5 3H19v16H6.5A2.5 2.5 0 004 21.5V5.5z"/><path d="M19 19v2H6.5"/></svg>
+    <span id="bookName">选择教材</span>
+    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+  <div class="spacer"></div>
+  <button id="btnSel" class="ico-btn" title="框选提问">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/></svg>
+  </button>
+  <button id="btnPen" class="ico-btn" title="手写批注">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20l4-1 9-9-3-3-9 9-1 4z"/><path d="M14 7l3 3"/></svg>
+  </button>
+  <button id="btnToc" class="ico-btn" title="目录">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h4M4 12h4M4 18h4M11 6h9M11 12h9M11 18h9"/></svg>
+  </button>
+  <button id="btnLayout" class="ico-btn" title="单页 / 双页">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="14" rx="1.5"/></svg>
+  </button>
+  <button id="btnBookmark" class="ico-btn" title="给当前页加书签">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h12v17l-6-4.2L6 21V4z"/></svg>
+  </button>
+  <button id="btnList" class="ico-btn" title="我的疑点">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+  </button>
+  <button id="btnTheme" class="ico-btn" title="切换主题">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
+  </button>
+  <button id="btnSet" class="ico-btn" title="设置">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+  </button>
+</header>
+
+<!-- ============ 阅读进度 ============ -->
+<div id="progress"><div id="progressBar"></div></div>
+
+<!-- ============ 页码 ============ -->
+<div id="pager">
+  <button id="prev" title="上一页">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <div class="pin">
+    <input id="pageInput" inputmode="numeric" value="1" aria-label="页码">
+    <span id="pageTotal">/ 0</span>
+  </div>
+  <span id="chapterName"></span>
+  <span id="markerDot" class="marker-dot hide" title="纸质笔记写到这里了，点一下跳回去"></span>
+  <button id="btnMarker" class="ico-btn sm" title="标记「纸质笔记写到这页了」">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 20l4-2 9-9-2-2-9 9-2 4z"/><path d="M14 7l2 2"/><path d="M4 21h16"/></svg>
+  </button>
+  <button id="btnFx" class="ico-btn sm" title="扫描件增强（原图 / 清晰 / 高对比）">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+  </button>
+  <button id="next" title="下一页">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+  </button>
+</div>
+
+<!-- ============ AI 浮窗 ============ -->
+<div id="panel" class="open">
+  <div id="panelHead">
+    <span class="bot-dot"></span>
+    <span id="panelTitle">伴读</span>
+    <span id="ctxChip" class="chip tiny">整页</span>
+    <div class="spacer"></div>
+    <button id="pMin" class="ico-btn sm" title="收起"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
+    <button id="pMax" class="ico-btn sm" title="放大"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+    <button id="pClose" class="ico-btn sm" title="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div id="ctxbar"><span id="ctxLabel">上下文：整页</span><button id="ctxClear" hidden>改用整页</button></div>
+  <div id="msgs">
+    <div class="hint">
+      <b>怎么用</b>
+      <ul>
+        <li>点 <span class="k">虚线框</span> 按钮，在页面上拖出一块 → 直接问这块</li>
+        <li>输入 <code>12</code> / <code>第12-14页</code> → 讲整页</li>
+        <li>不圈不指定页，默认就是当前这页</li>
+      </ul>
+    </div>
+  </div>
+  <div id="chips">
+    <button class="chip" data-q="这页在讲什么？用三句话概括。">讲这页</button>
+    <button class="chip" data-q="这页里最关键的公式是哪个？它是怎么推出来的？">关键公式</button>
+    <button class="chip" data-q="给我一个具体的数值例子。">举个例</button>
+    <button class="chip" data-q="这一步为什么可以这样近似？成立条件是什么？">为什么</button>
+  </div>
+  <div id="composer">
+    <textarea id="q" rows="1" placeholder="问点什么…（Enter 发送，Shift+Enter 换行）"></textarea>
+    <button id="send" title="发送">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+    </button>
+  </div>
+  <div id="grip"></div>
+</div>
+
+<!-- ============ 目录抽屉 ============ -->
+<div id="tocDrawer">
+  <div class="dhead">
+    <span>目录</span>
+    <span id="tocCount" class="chip tiny">0</span>
+    <div class="spacer"></div>
+    <button id="tocOffset" class="chip tiny" title="页码偏移：目录上的页码 + 偏移 = PDF 页">偏移 0</button>
+    <button id="tocScanBtn" class="chip tiny" title="让 AI 读目录页">扫描</button>
+    <button id="tocClose" class="ico-btn sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div id="tocListWrap">
+    <div id="tocTabs">
+      <button class="tab on" data-tab="toc">目录</button>
+      <button class="tab" data-tab="bm">书签</button>
+      <div class="spacer"></div>
+    </div>
+    <input id="tocSearch" class="search" placeholder="搜章节 / 页码…" autocomplete="off">
+    <div id="tocList"></div>
+    <div id="bmList" hidden></div>
+  </div>
+</div>
+
+<!-- ============ 疑点抽屉 ============ -->
+<div id="drawer">
+  <div class="dhead">
+    <span>我的疑点</span>
+    <span id="dCount" class="chip tiny">0</span>
+    <div class="spacer"></div>
+    <button id="dExport" class="chip tiny" title="导出 Markdown 笔记">导出</button>
+    <button id="dClose" class="ico-btn sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div id="dSearchWrap">
+    <input id="noteSearch" class="search" placeholder="搜问题 / 回答内容…" autocomplete="off">
+  </div>
+  <div id="dlist"></div>
+</div>
+
+<!-- ============ 书架 ============ -->
+<div id="booksModal" class="modal" hidden>
+  <div class="sheet wide">
+    <div class="sheet-head">
+      <h3>书架</h3>
+      <span id="bkCount" class="chip tiny">0 本</span>
+    </div>
+    <div id="bookList" class="grid"></div>
+    <div class="sheet-foot">
+      <button id="bReload" class="btn ghost">重新扫描</button>
+      <div class="spacer"></div>
+      <button id="bClose" class="btn ghost">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 设置 ============ -->
+<div id="setModal" class="modal" hidden>
+  <div class="sheet">
+    <div class="sheet-head"><h3>设置</h3></div>
+    <div class="field">
+      <label>API 地址</label>
+      <input id="sBase" placeholder="https://api.deepseek.com/v1">
+    </div>
+    <div class="field">
+      <label>模型名 <span class="hintline">讲图片要视觉模型</span></label>
+      <input id="sModel" placeholder="deepseek-chat">
+    </div>
+    <div class="field">
+      <label>API Key</label>
+      <input id="sKey" type="password" placeholder="留空表示不修改">
+    </div>
+    <div class="field">
+      <label>讲解风格 <span class="hintline">切换后会自动改写下面的系统提示词</span></label>
+      <select id="sStyle">
+        <option value="teach">讲解（默认，一步一步推）</option>
+        <option value="brief">速览（只给结论和关键式子）</option>
+        <option value="exam">考试（按考点+口诀组织）</option>
+        <option value="plain">大白话（学长口吻，打比方）</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>温度 <b id="sTempVal">0.3</b></label>
+      <input id="sTemp" type="range" min="0" max="1" step="0.1" value="0.3">
+    </div>
+    <div class="field">
+      <label>回答字号 <b id="fsVal">14.5px</b></label>
+      <input id="sFont" type="range" min="12" max="20" step="0.5" value="14.5">
+    </div>
+    <div class="field">
+      <label>记笔记的方式</label>
+      <select id="sKeepChat">
+        <option value="1">软件里保留对话（方便回看）</option>
+        <option value="0">不保存对话（笔记只在纸本上，软件用完即走）</option>
+      </select>
+    </div>
+    <div class="field">
+      <button id="openStats" class="btn ghost" style="width:100%">查看学习统计</button>
+    </div>
+    <div class="field storage">
+      <label>云同步 <span class="hintline" id="syncState">未配置</span></label>
+      <input id="sSyncToken" type="password" placeholder="GitHub Token（gist 权限，只存本机）" autocomplete="off">
+      <div class="strow" style="margin-top:8px">
+        <button id="btnSyncConfig" class="btn ghost">连接</button>
+        <button id="btnSyncNow" class="btn ghost">立即同步</button>
+      </div>
+      <p class="hintline" style="margin-top:8px">电脑和平板共用一份笔记：GitHub → Settings → Developer settings → Tokens，勾 <code>gist</code> 生成。笔记在你自己私密 Gist 里。</p>
+    </div>
+    <div class="field storage">
+      <label>存储与备份 <span class="hintline" id="cacheInfo">读取中…</span></label>
+      <div class="strow">
+        <button id="btnBackup" class="btn ghost">导出全部备份</button>
+        <button id="btnCleanCache" class="btn ghost">清理页图缓存</button>
+      </div>
+      <div class="strow" style="margin-top:8px">
+        <button id="btnPrint" class="btn ghost">打印当前页</button>
+        <button id="btnClearPage" class="btn ghost">清空本页对话</button>
+      </div>
+      <p class="hintline" style="margin-top:8px">备份是 zip，含所有笔记、目录、配置（不含 API Key）。缓存清掉只是需要重新渲染，笔记不受影响。</p>
+      <p class="hintline" id="appVer" style="margin-top:6px;opacity:.6"></p>
+    </div>
+    <details>
+      <summary>系统提示词（决定它怎么讲）</summary>
+      <textarea id="sPrompt" rows="8"></textarea>
+    </details>
+    <p class="tip" id="sTestOut"></p>
+    <div class="sheet-foot">
+      <button id="sTest" class="btn ghost">测试连接</button>
+      <div class="spacer"></div>
+      <button id="sCancel" class="btn ghost">取消</button>
+      <button id="sSave" class="btn primary">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 学习统计 ============ -->
+<div id="statsModal" class="modal" hidden>
+  <div class="sheet">
+    <div class="sheet-head"><h3>学习统计</h3><span id="statsBook" class="chip tiny"></span></div>
+    <div id="statsBody"></div>
+    <div class="sheet-foot">
+      <div class="spacer"></div>
+      <button id="statsClose" class="btn primary">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 快捷键面板 ============ -->
+<div id="helpModal" class="modal" hidden>
+  <div class="sheet">
+    <div class="sheet-head"><h3>快捷键 & 手势</h3></div>
+    <div class="keys">
+      <div class="krow"><kbd>←</kbd><kbd>→</kbd><span>上一页 / 下一页（PgUp / PgDn 同）</span></div>
+      <div class="krow"><kbd>+</kbd><kbd>−</kbd><span>放大 / 缩小</span></div>
+      <div class="krow"><kbd>0</kbd><span>回到适应屏幕</span></div>
+      <div class="krow"><kbd>B</kbd><span>当前页加 / 取消书签</span></div>
+      <div class="krow"><kbd>T</kbd><span>打开目录</span></div>
+      <div class="krow"><kbd>L</kbd><span>打开疑点</span></div>
+      <div class="krow"><kbd>F</kbd><span>切换扫描件增强</span></div>
+      <div class="krow"><kbd>D</kbd><span>单页 / 双页</span></div>
+      <div class="krow"><kbd>Esc</kbd><span>关闭浮层 / 退出框选</span></div>
+      <div class="krow"><kbd>?</kbd><span>打开这个面板</span></div>
+    </div>
+    <div class="gestures">
+      <b>触屏</b>
+      <ul>
+        <li>左右滑动翻页，双指捏合缩放，双击放大/复位</li>
+        <li>单击画面正中：隐藏 / 显示工具栏（沉浸阅读）</li>
+        <li>点虚线框按钮后在页面上拖：框选提问</li>
+      </ul>
+    </div>
+    <div class="sheet-foot">
+      <div class="spacer"></div>
+      <button id="helpClose" class="btn primary">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 页面缩略图 ============ -->
+<div id="thumbModal" class="modal" hidden>
+  <div class="sheet wide">
+    <div class="sheet-head">
+      <h3>翻页缩略图</h3>
+      <span id="thumbInfo" class="chip tiny"></span>
+      <div class="spacer"></div>
+      <button id="thumbClose" class="ico-btn sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div id="thumbGrid"></div>
+  </div>
+</div>
+
+<!-- ============ 命令面板 ============ -->
+<div id="cmdModal" class="modal cmdm" hidden>
+  <div class="cmdbox">
+    <div class="cmdinput">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="cmdInput" placeholder="输入页码 / 章节名 / %50 / 命令…" autocomplete="off" spellcheck="false">
+      <kbd>Esc</kbd>
+    </div>
+    <div id="cmdList"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="vendor/pdfjs/pdf.min.js"></script>
+<script src="pdfrender.js"></script>
+<script>window.__OFFLINE_BOOK__={"multi": true, "id": "__multi__", "pages": 1700};</script>
+<script src="app.js"></script>
+<script src="sync.js"></script>
+
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').then(() => {
+    navigator.serviceWorker.addEventListener('message', ev => {
+      const d = ev.data || {};
+      const t = document.getElementById('toast');
+      if (d.type === 'progress' && d.total) {
+        document.title = '缓存中 ' + Math.round(d.done / d.total * 100) + '% · 伴读';
+        if (t) { t.textContent = '正在缓存 ' + d.done + ' / ' + d.total + ' 页…'; t.classList.add('show'); }
+      } else if (d.type === 'cached') {
+        document.title = '教材伴读';
+        if (t) { t.textContent = '整站已缓存到本机，断网也能用'; setTimeout(() => t.classList.remove('show'), 5000); }
+      }
+    });
+  }).catch(() => {});
+}
+</script>
+</body>
+</html>
