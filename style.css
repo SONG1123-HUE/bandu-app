@@ -1172,7 +1172,8 @@ kbd {
   #btnPen, #btnLayout, #btnFx, #btnList, #btnBookmark { display: none !important; }
   #topbar { gap: 0; padding: 0 4px; }
   #topbar .ico-btn { width: 38px !important; height: 38px !important; padding: 9px !important; }
-  .pill { max-width: 34vw; height: 36px; font-size: 12.5px; padding: 0 9px; gap: 6px; }
+  .pill { max-width: 130px !important; height: 36px; font-size: 12.5px; padding: 0 8px; gap: 5px; flex: 0 1 auto; min-width: 0; }
+  .pill span, .pill .pname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #bookList.grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; }
   .bitem { min-width: 0; }
   .bitem .btitle { font-size: 12.5px; line-height: 1.35; }
