@@ -422,7 +422,9 @@ function gotoPage(n) {
     if (box) {
       box.hidden = false;
       const t = $('#peText');
-      if (t) t.textContent = '第 ' + n + ' 页读不出来（文件可能损坏或页码越界）';
+      if (t) t.textContent = PDFR.src
+        ? '第 ' + n + ' 页渲染失败 —— 点重试，或切到「图片模式」'
+        : '第 ' + n + ' 页读不出来（文件可能损坏或页码越界）';
     }
   };
   if (E.img.getAttribute('src') === url && E.img.complete && E.img.naturalWidth) { onPageLoaded(); return; }
