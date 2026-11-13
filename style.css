@@ -1164,6 +1164,30 @@ kbd {
   .chip { padding: 8px 14px; font-size: 13px; }
   .bitem:hover { transform: none; }
 }
+
+/* ================= 手机窄屏专项 ================= */
+@media (max-width: 600px) {
+  /* 顶栏只留常用的：书架 / 框选 / 目录 / 书签 / 面板 / 设置
+     手写、双页、滚动、主题、扫描增强、疑点清单收进命令面板（长按书名或按 / 呼出） */
+  #btnPen, #btnLayout, #btnFx, #btnList, #btnBookmark { display: none !important; }
+  #topbar { gap: 0; padding: 0 4px; }
+  #topbar .ico-btn { width: 40px !important; height: 40px !important; padding: 10px !important; }
+  .pill { max-width: 42vw; height: 36px; font-size: 13px; padding: 0 10px; }
+  #bookList.grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; }
+  .bitem { min-width: 0; }
+  .bitem .btitle { font-size: 12.5px; line-height: 1.35; }
+  #panel { height: 38vh; max-height: 44vh; }
+  #panel.min { height: 46px; }
+  #chips { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  #chips::-webkit-scrollbar { display: none; }
+  #selActions { max-width: 94vw; overflow-x: auto; }
+}
+
+@media (max-width: 400px) {
+  #topbar .ico-btn { width: 36px !important; height: 36px !important; padding: 8px !important; }
+  .pill { max-width: 36vw; font-size: 12.5px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }

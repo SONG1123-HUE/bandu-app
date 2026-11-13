@@ -178,6 +178,8 @@ function stageRect() { return E.stage.getBoundingClientRect(); }
 function fit() {
   const r = stageRect();
   if (!S.natW || !r.width) return;
+  // 手机窄屏一律单页：双页在 390px 上没法看
+  if (r.width < 620 && S.double) { setDouble(false); return; }
   const hidden = S.uiHidden;
   const padTop = hidden ? 10 : 62;      // 给顶栏留位
   const padBottom = hidden ? 10 : 84;   // 给页码胶囊留位
@@ -343,13 +345,6 @@ async function openBook(b) {
   S.pages = b.pages || 0;
   E.bookName.textContent = b.title;
   E.pageTotal.textContent = '/ ' + S.pages;
-  // 这本书的 PDF 在哪（有就本地渲染，没就回退图片）
-  if (typeof PDFR !== 'undefined') {
-    PDFR.doc = null; PDFR.loading = null; PDFR.cache.clear();
-    PDFR.src = OFF
-      ? (b.pdf || ('pdf/' + (b.key || bookKey(b.id)) + '.pdf'))
-      : ('/pdf/' + encodeURIComponent(b.id));
-  }
   document.title = b.title + ' · 教材伴读';
   localStorage.setItem('jb_last', b.id);
   let n = null;
@@ -422,9 +417,7 @@ function gotoPage(n) {
     if (box) {
       box.hidden = false;
       const t = $('#peText');
-      if (t) t.textContent = PDFR.src
-        ? '第 ' + n + ' 页渲染失败 —— 点重试，或切到「图片模式」'
-        : '第 ' + n + ' 页读不出来（文件可能损坏或页码越界）';
+      if (t) t.textContent = '第 ' + n + ' 页读不出来（文件可能损坏或页码越界）';
     }
   };
   if (E.img.getAttribute('src') === url && E.img.complete && E.img.naturalWidth) { onPageLoaded(); return; }
@@ -448,22 +441,7 @@ function gotoPage(n) {
     E.img.src = url;
   };
   pre.onerror = () => { if (seq === S.loadSeq) E.img.src = url; };
-
-  // 有 PDF 就直接本地渲染（体积小、放大不糊），否则走预渲染图片
-  if (PDFR.src) {
-    pdfPageImage(n).then(dataUrl => {
-      if (seq !== S.loadSeq) return;
-      pre.src = dataUrl;
-      // 顺带预热前后页
-      pdfPrefetch([n + 1, n - 1, n + 2]);
-    }).catch(err => {
-      if (seq !== S.loadSeq) return;
-      console.warn('pdf 渲染失败，回退图片:', err.message);
-      pre.src = url;
-    });
-  } else {
-    pre.src = url;
-  }
+  pre.src = url;
 }
 function onPageLoaded() {
   clearTimeout(plTimer);
