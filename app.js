@@ -40,7 +40,7 @@ const S = {
   natW: 0, natH: 0, scale: 1, fit: 1, tx: 0, ty: 0,
   mode: 'read', notes: { pages: {} }, region: null, busy: false,
   stroke: null, settings: {}, uiHidden: false, loadSeq: 0, lastToggleAt: 0,
-  activeMark: null,
+  activeMark: null, lastDir: 1,
   double: localStorage.getItem('jb_double') === '1',
   fitMode: localStorage.getItem('jb_fitmode') || 'height',
 };
@@ -506,21 +506,28 @@ function updateChapterName() {
   el.textContent = cur ? cur.title.replace(/^第?\s*/, '') : '';
   el.title = cur ? cur.title : '';
 }
+/* 预取：先补前后各一页（翻页方向最可能用到），再按方向多备几页 */
 function prefetch() {
   const step = S.double ? 2 : 1;
-  const pages = [];
-  for (let i = 1; i <= 4; i++) pages.push(S.page + step * i);
-  if (S.double) pages.push(S.page + 2 * 1 + 1);
-  pages.forEach(p => {
-    if (p >= 1 && p <= S.pages) {
-      const i = new Image();
-      i.decoding = 'async';
-      i.src = pageUrl(S.book.id, p);
-    }
+  const want = [];
+  const dir = S.lastDir || 1;              // 1 往后翻，-1 往回翻
+  // 优先：下一段（按你翻页的方向）
+  for (let i = 1; i <= 3; i++) want.push(S.page + step * i * dir);
+  // 其次：反方向 2 页（回头翻也快）
+  for (let i = 1; i <= 2; i++) want.push(S.page - step * i * dir);
+  if (S.double) want.push(S.page + 2 * dir + 1, S.page + 1);
+
+  const seen = new Set();
+  want.forEach(p => {
+    if (p < 1 || p > S.pages || seen.has(p)) return;
+    seen.add(p);
+    const i = new Image();
+    i.decoding = 'async';
+    i.src = pageUrl(S.book.id, p);
   });
 }
-function nextPage() { const st = S.double ? 2 : 1; if (S.page + st <= S.pages || (S.double && S.page + 1 < S.pages)) gotoPage(Math.min(S.pages, S.page + st)); }
-function prevPage() { const st = S.double ? 2 : 1; if (S.page > 1) gotoPage(Math.max(1, S.page - st)); }
+function nextPage() { S.lastDir = 1; const st = S.double ? 2 : 1; if (S.page + st <= S.pages || (S.double && S.page + 1 < S.pages)) gotoPage(Math.min(S.pages, S.page + st)); }
+function prevPage() { S.lastDir = -1; const st = S.double ? 2 : 1; if (S.page > 1) gotoPage(Math.max(1, S.page - st)); }
 
 if ($('#btnLayout')) {
   $('#btnLayout').onclick = () => cycleLayout();
@@ -2566,7 +2573,9 @@ async function refreshCacheInfo() {
         if (k.indexOf('jb_off_notes_') === 0) bytes += (localStorage.getItem(k) || '').length;
       }
     } catch (e) { }
-    lbl.textContent = '笔记 ' + (bytes / 1024).toFixed(0) + ' KB · ' + (S.books.length || 0) + ' 本书';
+    const synced = (typeof SYNC !== 'undefined' && SYNC.enabled());
+    lbl.textContent = '笔记 ' + (bytes / 1024).toFixed(0) + ' KB · ' + (S.books.length || 0) + ' 本书'
+      + (synced ? '' : ' · ⚠ 未开云同步，清缓存会丢');
     return;
   }
   try {
