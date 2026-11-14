@@ -1186,8 +1186,29 @@ async function imagesFor(mode, pages, region) {
     try {
       const im = await loadImage(pageUrl(S.book.id, region.page));
       out.push(cropFrom(im, 0, 0, 1, 1, 720));
-    } catch (e) { }
-    out.push(region.dataUrl);
+    } catch (e) {
+      console.warn('整页上下文取图失败', e);
+    }
+    // 框选块：优先用 commitSel 时裁好的；没有就从当前页现裁一次
+    let crop = region.dataUrl;
+    if (!crop || crop.length < 200) {
+      try {
+        const m = region.mark;
+        crop = cropFrom(E.img, m.x, m.y, m.w, m.h, 1500);
+        region.dataUrl = crop;
+      } catch (e) {
+        console.warn('框选区现裁失败', e);
+      }
+    }
+    if (crop && crop.length > 200) out.push(crop);
+    // 兜底：一张都没有时至少把当前页发出去，别让模型空手回答
+    if (!out.length) {
+      try {
+        const im = await loadImage(pageUrl(S.book.id, S.page));
+        out.push(cropFrom(im, 0, 0, 1, 1, 1500));
+        toast('框选区取图失败，改用整页提问');
+      } catch (e) { }
+    }
     return out;
   }
   const out = [];
@@ -1321,6 +1342,12 @@ async function checkOfflineCache() {
 
 async function send() {
   if (S.busy || !S.book) return;
+  // 离线版没配 Key 时，直接说清楚，别让人等到报错
+  if (OFF && !(offSettings().api_key || localStorage.getItem('jb_off_key') || '').trim()) {
+    toast('还没填 API Key —— 打开设置粘贴一个（只存这台设备）');
+    E.setModal.hidden = false;
+    return;
+  }
   const raw = E.q.value.trim();
   if (!raw && !S.region) { toast('先圈一块区域，或说点什么'); return; }
 
@@ -2025,6 +2052,11 @@ async function loadSettings() {
   if (sel) sel.value = styleOfPrompt(s.system_prompt || '');
 }
 $('#btnSet').onclick = () => { E.setModal.hidden = false; $('#sTestOut').textContent = ''; };
+if ($('#btnSelfCheck')) $('#btnSelfCheck').onclick = () => {
+  const out = $('#sTestOut');
+  if (out) { out.className = 'tip'; out.textContent = '自检中…'; }
+  aiSelfCheck();
+};
 $('#sCancel').onclick = () => { E.setModal.hidden = true; };
 $('#sTest').onclick = async () => {
   const out = $('#sTestOut');
@@ -2576,6 +2608,79 @@ window.addEventListener('beforeunload', saveViewState);
     try { const ok = await syncNow(false); if (ok) refresh(); } catch (e) { toast(e.message); }
   };
 })();
+
+/* ------------------------------------------------ AI 自检：一键定位「问不了」的原因 */
+async function aiSelfCheck() {
+  const out = $('#sTestOut');
+  const lines = [];
+  const put = (s, st) => {
+    lines.push((st === 0 ? '✗ ' : st === 1 ? '✓ ' : '· ') + s);
+    if (out) {
+      out.className = 'tip' + (st === 0 ? ' bad' : '');
+      out.textContent = lines.join('\n');
+      out.style.whiteSpace = 'pre-line';
+    }
+  };
+  const s = OFF ? offSettings() : (S.settings || {});
+  const base = (s.base_url || OFF_API).replace(/\/+$/, '');
+
+  const key = OFF
+    ? (s.api_key || localStorage.getItem('jb_off_key') || '').trim()
+    : '(服务端持有)';
+  if (!key) { put('没有 API Key —— 在上面输入框粘贴一个，点保存', 0); return; }
+  put('API Key：' + (OFF ? '已配置（' + key.slice(0, 6) + '…，长度 ' + key.length + '）' : '由电脑端保管'), 1);
+
+  const t0 = Date.now();
+  try {
+    const r = await fetch(base + '/models', { headers: OFF ? { Authorization: 'Bearer ' + key } : {} });
+    put('网络：' + (r.ok ? '通，' + (Date.now() - t0) + 'ms' : '返回 HTTP ' + r.status), r.ok ? 1 : 0);
+    if (r.status === 401) { put('  401 = Key 无效，去 DeepSeek 后台重新生成一个', 0); return; }
+  } catch (e) {
+    put('网络：连不上 ' + base + '（' + String(e.message).slice(0, 40) + '）', 0);
+    return;
+  }
+
+  let testImg = '';
+  try {
+    if (!E.img || !E.img.naturalWidth) throw new Error('当前页还没加载出来，先翻一页再测');
+    testImg = cropFrom(E.img, 0, 0, 1, 1, 420);
+    put('取图：正常，整页缩略 ' + Math.round(testImg.length / 1024) + ' KB', 1);
+  } catch (e) {
+    put('取图：失败 —— ' + e.message, 0);
+    return;
+  }
+
+  const t1 = Date.now();
+  try {
+    const r = await fetch(base + '/chat/completions', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' },
+        OFF ? { Authorization: 'Bearer ' + key } : {}),
+      body: JSON.stringify({
+        model: s.model || 'deepseek-chat',
+        messages: [{
+          role: 'user', content: [
+            { type: 'image_url', image_url: { url: testImg } },
+            { type: 'text', text: '这张图里是什么？五个字以内回答。' },
+          ],
+        }],
+        max_tokens: 24,
+        stream: false,
+      }),
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      put('模型：HTTP ' + r.status + ' —— ' + offErrText(r.status, t).slice(0, 90), 0);
+      return;
+    }
+    const j = await r.json();
+    const txt = ((j.choices && j.choices[0] && j.choices[0].message.content) || '').trim();
+    put('模型：能读图（' + (Date.now() - t1) + 'ms）→「' + txt.slice(0, 20) + '」', 1);
+    put('结论：整条链路是通的，框选提问应该能正常回答', 1);
+  } catch (e) {
+    put('模型：请求异常 —— ' + String(e.message).slice(0, 60), 0);
+  }
+}
 
 async function refreshCacheInfo() {
   const lbl = $('#cacheInfo');
